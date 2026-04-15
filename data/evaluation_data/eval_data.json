@@ -162,10 +162,92 @@
     },
     {
       "question": "In UNO, what does the Dragon card do?",
-      "expected_output": "No matching official rule found for that card.",
+      "expected_output": "Dragon is not a defined card in official UNO rules.",
       "metadata": {
         "game": "uno",
-        "must_include": ["could not locate"]
+        "must_include": ["not a defined card"]
+      }
+    },
+    {
+      "question": "Can I do this now?",
+      "expected_output": "I need more specific details to help you.",
+      "metadata": {
+        "game": "uno",
+        "selected_game": "uno",
+        "must_include": ["more specific details"]
+      }
+    },
+    {
+      "question": "In UNO, can I stack a +2 on another +2?",
+      "expected_output": "Detect game filter mismatch and ask user to switch game.",
+      "metadata": {
+        "game": "werewolves",
+        "selected_game": "werewolves",
+        "must_include": ["looks like a uno question", "filter is set to werewolves", "switch the game filter"]
+      }
+    },
+    {
+      "question": "In Werewolves, can the Witch poison the Mayor?",
+      "expected_output": "This case is not specified in the rules.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["not specified", "house ruling"]
+      }
+    },
+    {
+      "question": "In Werewolves, what happens if the Werewolf kills the Little Girl?",
+      "expected_output": "This case is not specified in the rules.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["not specified", "house ruling"]
+      }
+    },
+    {
+      "question": "In Werewolves, what happens if a Werewolf kills another Werewolf?",
+      "expected_output": "This case is not specified in the rules.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["not specified", "house ruling"]
+      }
+    },
+    {
+      "question": "In Werewolves, can the Hunter kill the Mayor at night?",
+      "expected_output": "This case is not specified in the rules.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["not specified", "house ruling"]
+      }
+    },
+    {
+      "question": "In Werewolves, what happens if the Witch poisons the Seer?",
+      "expected_output": "This case is not specified in the rules.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["not specified", "house ruling"]
+      }
+    },
+    {
+      "question": "In UNO, can I play two cards of the same number and colour?",
+      "expected_output": "Official UNO uses one card per turn.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["one card per turn", "house rule"]
+      }
+    },
+    {
+      "question": "In UNO, can I put down two matching cards at once?",
+      "expected_output": "Official UNO does not allow multi-card play in one turn.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["one card per turn", "not part of official core rules"]
+      }
+    },
+    {
+      "question": "In UNO, can I play 2 cards in the same turn if they match?",
+      "expected_output": "No, that is a house rule variant.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["one card per turn", "house rule"]
       }
     }
   ]

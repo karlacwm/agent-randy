@@ -13,8 +13,8 @@ from app.services.agent import answer_question
 EVAL_PATH = ROOT_DIR / "data" / "evaluation_data" / "eval_data.json"
 
 
-def run_case(question: str) -> dict:
-    return answer_question(question).model_dump()
+def run_case(question: str, selected_game: str | None = None) -> dict:
+    return answer_question(question, selected_game=selected_game).model_dump()
 
 
 def score_case(output: dict, must_include: list[str]) -> tuple[bool, list[str]]:
@@ -34,8 +34,10 @@ def main() -> None:
     passed = 0
     for index, item in enumerate(items, start=1):
         try:
-            output = run_case(item["question"])
-            must_include = item.get("metadata", {}).get("must_include", [])
+            metadata = item.get("metadata", {})
+            selected_game = metadata.get("selected_game")
+            output = run_case(item["question"], selected_game=selected_game)
+            must_include = metadata.get("must_include", [])
             ok, missing = score_case(output, must_include)
 
             status = "PASS" if ok else "FAIL"

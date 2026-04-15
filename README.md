@@ -93,8 +93,4 @@ This script prints pass/fail and pass-rate using simple required-signal checks.
 - `app/services/rules_db.py`: Rule loading, chunking, retrieval, quoting.
 - `data/*.md`: Local rule references used for retrieval.
 
-## Live demo playbook
-
-See `DEMO_SCRIPT.md` for a step-by-step 5-minute workshop demo flow.
-
 

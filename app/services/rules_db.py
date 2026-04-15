@@ -312,17 +312,43 @@ def retrieve_rules(game: str, query: str, top_k: int = 3) -> list[RuleChunk]:
     return [chunk for _, chunk in scored[:top_k]]
 
 
-def quote_rule(game: str, chunk_id: str, max_chars: int = 800) -> str:
+def quote_rule(game: str, chunk_id: str, max_chars: int = 800, query: str | None = None) -> str:
     if max_chars < 40:
         max_chars = 40
+
+    def trim_with_sentence_boundary(text: str, limit: int) -> str:
+        if len(text) <= limit:
+            return text
+
+        snippet = text[:limit].rstrip()
+        sentence_end = max(snippet.rfind(". "), snippet.rfind("! "), snippet.rfind("? "))
+        if sentence_end >= int(limit * 0.6):
+            return snippet[: sentence_end + 1].rstrip()
+        return snippet + "..."
 
     chunks = load_rule_chunks(game)
     for chunk in chunks:
         if chunk.chunk_id == chunk_id:
             quote = chunk.text.replace("\n", " ").strip()
-            if len(quote) <= max_chars:
-                return quote
-            return quote[: max_chars - 3] + "..."
+            if not query:
+                return trim_with_sentence_boundary(quote, max_chars)
+
+            query_terms = set(_query_terms(query))
+            sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", quote) if part.strip()]
+            if not sentences:
+                return trim_with_sentence_boundary(quote, max_chars)
+
+            best_sentence = sentences[0]
+            best_score = -1
+            for sentence in sentences:
+                sentence_terms = _tokenize(sentence)
+                score = len(query_terms.intersection(sentence_terms))
+                if score > best_score:
+                    best_score = score
+                    best_sentence = sentence
+
+            return trim_with_sentence_boundary(best_sentence, max_chars)
+
     raise ValueError(f"Chunk not found for game '{game}' and id '{chunk_id}'")
 
 

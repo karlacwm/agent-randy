@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -5,6 +8,41 @@ from fastapi.responses import HTMLResponse
 from app.routers.assistant import router
 
 load_dotenv()
+
+
+def _load_eval_questions() -> dict[str, list[str]]:
+  eval_data_path = Path(__file__).resolve().parents[1] / "data" / "evaluation_data" / "eval_data.json"
+  questions_by_game: dict[str, list[str]] = {
+    "all": [],
+    "uno": [],
+    "werewolves": [],
+  }
+
+  try:
+    payload = json.loads(eval_data_path.read_text(encoding="utf-8"))
+    items = payload.get("items", [])
+    seen: set[str] = set()
+
+    for item in items:
+      question = (item.get("question") or "").strip()
+      metadata = item.get("metadata") or {}
+      game = (metadata.get("game") or "").strip().lower()
+
+      if not question or question in seen:
+        continue
+
+      seen.add(question)
+      questions_by_game["all"].append(question)
+
+      if game in questions_by_game:
+        questions_by_game[game].append(question)
+  except Exception:
+    return questions_by_game
+
+  return questions_by_game
+
+
+EVAL_QUESTIONS_BY_GAME = _load_eval_questions()
 
 app = FastAPI(title="Randy")
 app.include_router(router)
@@ -17,7 +55,7 @@ async def health_check():
 
 @app.get("/", response_class=HTMLResponse)
 async def home_page() -> str:
-    return """
+  html = """
 <!doctype html>
 <html lang="en">
   <head>
@@ -28,20 +66,20 @@ async def home_page() -> str:
       :root {
         --butter: #fff7e6;
         --ink: #2e2a33;
-        --melon: #ffbfa5;
         --sky: #b8dcff;
         --mint: #c9f7e8;
         --jam: #4a3856;
         --paper: rgba(255, 255, 255, 0.84);
         --line: rgba(88, 58, 42, 0.18);
         --shadow: rgba(78, 54, 46, 0.16);
+        --reading-font: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: var(--reading-font);
         color: var(--ink);
         background:
           radial-gradient(1000px 520px at -10% -10%, var(--mint), transparent 60%),
@@ -99,6 +137,12 @@ async def home_page() -> str:
         color: var(--ink);
       }
 
+      #prompt {
+        font-family: var(--reading-font);
+        font-size: 1.02rem;
+        line-height: 1.6;
+      }
+
       textarea {
         min-height: 120px;
         resize: vertical;
@@ -116,8 +160,24 @@ async def home_page() -> str:
         flex-wrap: wrap;
       }
 
+      .eval-wrap {
+        display: none;
+        margin-top: 8px;
+        max-height: 220px;
+        overflow: auto;
+        padding: 6px;
+        border: 1px dashed #dcc6b6;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.74);
+      }
+
       .faq-wrap.visible {
         display: flex;
+      }
+
+      .eval-wrap.visible {
+        display: grid;
+        gap: 6px;
       }
 
       .filter-btn {
@@ -136,7 +196,7 @@ async def home_page() -> str:
         border-color: #e2a98f;
       }
 
-      .faq-btn {
+      .quick-btn {
         border: 1px solid #d8c8bb;
         background: #fff;
         color: #5a4639;
@@ -147,7 +207,12 @@ async def home_page() -> str:
         cursor: pointer;
       }
 
-      .faq-btn:hover {
+      .quick-btn--compact {
+        border-radius: 10px;
+        font-size: 0.83rem;
+      }
+
+      .quick-btn:hover {
         background: #fff8ef;
       }
 
@@ -194,7 +259,17 @@ async def home_page() -> str:
         color: #755645;
       }
 
-      .ruling { margin: 0; line-height: 1.5; }
+      .result-heading {
+        font-size: 1.06rem;
+        letter-spacing: 0.06em;
+        margin: 0 0 14px;
+      }
+
+      .ruling {
+        margin: 0;
+        line-height: 1.6;
+        font-family: var(--reading-font);
+      }
 
       .details {
         margin-top: 4px;
@@ -202,6 +277,20 @@ async def home_page() -> str:
         border-top: 1px dashed #e2c8b8;
         display: grid;
         gap: 8px;
+      }
+
+      .detail-item {
+        border: 1px solid #ead7cc;
+        background: #fffdfa;
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .detail-content {
+        margin: 0;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       .empty {
@@ -241,8 +330,13 @@ async def home_page() -> str:
           </div>
 
           <div>
+            <button id="toggle-eval" class="button secondary" type="button">For quick copy & paste</button>
+            <div class="eval-wrap" id="eval-wrap"></div>
+          </div>
+
+          <div>
             <label class="label" for="session">Session id</label>
-            <input id="session" value="demo-ui" aria-label="Session id" />
+            <input id="session" value="demo1" aria-label="Session id" />
           </div>
 
           <div>
@@ -257,7 +351,7 @@ async def home_page() -> str:
       </section>
 
       <section class="result-card" id="result">
-        <p class="empty">Result appears here. Ask your first scenario above.</p>
+        <p class="empty">Result appears here. Ask something to Randy first.</p>
       </section>
     </main>
 
@@ -268,8 +362,13 @@ async def home_page() -> str:
       const resultEl = document.getElementById('result');
       const filterEl = document.getElementById('game-filter');
       const faqWrapEl = document.getElementById('faq-wrap');
+      const evalWrapEl = document.getElementById('eval-wrap');
+      const toggleEvalBtn = document.getElementById('toggle-eval');
+
+      const EVAL_QUESTIONS_BY_GAME = __EVAL_QUESTIONS_JSON__;
 
       let selectedGame = '';
+      let evalVisible = false;
 
       const FAQ_BY_GAME = {
         uno: [
@@ -284,29 +383,93 @@ async def home_page() -> str:
         ],
       };
 
-      const renderFaqButtons = () => {
-        faqWrapEl.innerHTML = '';
-        const list = FAQ_BY_GAME[selectedGame] || [];
+      const esc = (value) => {
+        return String(value ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      };
 
-        if (!list.length) {
-          faqWrapEl.classList.remove('visible');
-          return;
+      const fillQuestionButtons = ({
+        container,
+        questions,
+        className,
+        emptyMessage,
+        onClick,
+      }) => {
+        container.innerHTML = '';
+
+        if (!questions.length) {
+          if (emptyMessage) {
+            const empty = document.createElement('p');
+            empty.className = 'empty';
+            empty.textContent = emptyMessage;
+            container.appendChild(empty);
+          }
+          return false;
         }
 
-        list.forEach((question) => {
+        questions.forEach((question) => {
           const button = document.createElement('button');
           button.type = 'button';
-          button.className = 'faq-btn';
+          button.className = className;
           button.textContent = question;
-          button.addEventListener('click', () => {
-            promptEl.value = question;
-            promptEl.focus();
-          });
-          faqWrapEl.appendChild(button);
+          button.addEventListener('click', () => onClick(question));
+          container.appendChild(button);
         });
 
-        faqWrapEl.classList.add('visible');
+        return true;
       };
+
+      const renderFaqButtons = () => {
+        const list = FAQ_BY_GAME[selectedGame] || [];
+
+        const hasFaq = fillQuestionButtons({
+          container: faqWrapEl,
+          questions: list,
+          className: 'quick-btn',
+          onClick: (question) => {
+            promptEl.value = question;
+            promptEl.focus();
+          },
+        });
+
+        faqWrapEl.classList.toggle('visible', hasFaq);
+      };
+
+      const getEvalQuestions = () => {
+        if (selectedGame && Array.isArray(EVAL_QUESTIONS_BY_GAME[selectedGame])) {
+          return EVAL_QUESTIONS_BY_GAME[selectedGame];
+        }
+        return EVAL_QUESTIONS_BY_GAME.all || [];
+      };
+
+      const renderEvalButtons = () => {
+        fillQuestionButtons({
+          container: evalWrapEl,
+          questions: getEvalQuestions(),
+          className: 'quick-btn quick-btn--compact',
+          emptyMessage: 'No evaluation questions found.',
+          onClick: async (question) => {
+            promptEl.value = question;
+            promptEl.focus();
+            promptEl.select();
+            try {
+              await navigator.clipboard.writeText(question);
+            } catch {
+              // Clipboard permission can fail in some browsers; prompt still gets populated.
+            }
+          },
+        });
+      };
+
+      toggleEvalBtn.addEventListener('click', () => {
+        evalVisible = !evalVisible;
+        evalWrapEl.classList.toggle('visible', evalVisible);
+        toggleEvalBtn.textContent = evalVisible ? 'Hide questions' : 'For quick copy & paste';
+      });
 
       filterEl.addEventListener('click', (event) => {
         const button = event.target.closest('[data-game]');
@@ -319,29 +482,31 @@ async def home_page() -> str:
         buttons.forEach((btn) => btn.classList.remove('active'));
         button.classList.add('active');
         renderFaqButtons();
+        renderEvalButtons();
       });
 
       renderFaqButtons();
-
-      const esc = (value) => {
-        return String(value ?? '')
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;')
-          .replaceAll("'", '&#39;');
-      };
+      renderEvalButtons();
 
       const renderError = (message) => {
         resultEl.innerHTML = `<p class="empty">${esc(message)}</p>`;
       };
 
       const renderResponse = (data) => {
-        const source = data.source ? `<p class="card-title">Source</p><p class="ruling">${esc(data.source)}</p>` : '';
-        const evidence = data.evidence ? `<p class="card-title">Evidence</p><p class="ruling">${esc(data.evidence)}</p>` : '';
-        const followUp = data.follow_up ? `<p class="card-title">Need More Info</p><p class="ruling">${esc(data.follow_up)}</p>` : '';
-        const detailsContent = `${source}${evidence}${followUp}`;
-        const hasDetails = Boolean(data.source || data.evidence || data.follow_up);
+        const detailConfig = [
+          ['source', 'Source'],
+          ['evidence', 'What the rulebook says'],
+          ['follow_up', 'Follow-up - need more info'],
+        ];
+
+        const detailItems = detailConfig
+          .filter(([key]) => Boolean(data[key]))
+          .map(([key, label]) => (
+            `<div class="detail-item"><p class="card-title">${label}</p><p class="detail-content">${esc(data[key])}</p></div>`
+          ));
+
+        const detailsContent = detailItems.join('');
+        const hasDetails = detailItems.length > 0;
         const detailsToggle = hasDetails
           ? '<button class="button secondary" id="toggle-details" type="button">Show details</button>'
           : '';
@@ -351,7 +516,7 @@ async def home_page() -> str:
 
         resultEl.innerHTML = `
           <div class="result-top">
-            <p class="card-title">Game rules</p>
+            <p class="card-title result-heading">Randy's reply</p>
           </div>
           <p class="ruling">${esc(data.ruling || 'No ruling generated.')}</p>
           ${detailsToggle}
@@ -371,7 +536,7 @@ async def home_page() -> str:
 
       askBtn.addEventListener('click', async () => {
         const prompt = promptEl.value.trim();
-        const sessionId = sessionEl.value.trim() || 'demo-ui';
+        const sessionId = sessionEl.value.trim() || 'demo1';
 
         if (!prompt) {
           renderError('Please enter a prompt first.');
@@ -399,7 +564,7 @@ async def home_page() -> str:
           } else {
             renderResponse(data);
           }
-        } catch (error) {
+        } catch {
           renderError('Request failed. Please check server logs and try again.');
         } finally {
           askBtn.disabled = false;
@@ -410,9 +575,10 @@ async def home_page() -> str:
   </body>
 </html>
     """
+  return html.replace("__EVAL_QUESTIONS_JSON__", json.dumps(EVAL_QUESTIONS_BY_GAME))
 
 
 if __name__ == "__main__":
-    import uvicorn
+  import uvicorn
 
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+  uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

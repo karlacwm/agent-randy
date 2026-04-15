@@ -41,6 +41,16 @@ def _natural_ruling(prompt: str, game: str, chunk_text: str) -> str:
     return f"According to official {game_label} rules, {core[0].lower() + core[1:] if len(core) > 1 else core}"
 
 
+def _citation_from_chunks(chunks: list[rules_db.RuleChunk], prompt: str) -> tuple[str | None, str | None]:
+    if not chunks:
+        return None, None
+
+    primary = chunks[0]
+    source = f"{primary.game.title()} - {primary.section}"
+    evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt)
+    return source, evidence
+
+
 def _build_unsupported_response() -> AssistantResponse:
     supported = ", ".join(rules_db.list_games())
     return AssistantResponse(
@@ -52,25 +62,133 @@ def _build_unsupported_response() -> AssistantResponse:
     )
 
 
-def _build_not_found_response() -> AssistantResponse:
+def _build_not_found_response(prompt: str, game: str) -> AssistantResponse:
+    text = prompt.lower()
+
+    # Check if prompt is too generic
+    if _is_too_generic_for_ruling(prompt):
+        return AssistantResponse(
+            ruling="I need more specific details to help you.",
+            follow_up="Can you describe what you're trying to do? For example, mention specific cards, roles, or game phases.",
+        )
+
+    missing_bits: list[str] = []
+    if game == "uno":
+        if not any(token in text for token in ("+2", "+4", "draw", "reverse", "skip", "wild", "card")):
+            missing_bits.append("exact card name")
+        if not any(token in text for token in ("turn", "next", "immediately", "before", "after")):
+            missing_bits.append("whose turn it is")
+    elif game == "werewolves":
+        if not any(token in text for token in ("witch", "hunter", "mayor", "little girl", "werewolf", "villager", "role")):
+            missing_bits.append("exact role name")
+        if not any(token in text for token in ("night", "day", "awake", "discussion", "vote", "phase")):
+            missing_bits.append("current phase")
+
+    if not missing_bits:
+        follow_up = "Please clarify the exact card or role involved and the current phase/turn order."
+    elif len(missing_bits) == 1:
+        follow_up = f"Please clarify: {missing_bits[0]}."
+    else:
+        follow_up = f"Please clarify: {missing_bits[0]} and {missing_bits[1]}."
+
     return AssistantResponse(
         ruling=(
-            "I could not locate a direct official rule match for that exact situation."
+            "I do not have enough exact context to match this to an official rule with confidence."
+        ),
+        follow_up=follow_up,
+    )
+
+
+def _build_game_mismatch_response(selected_game: str, prompt: str) -> AssistantResponse:
+    guessed_game = rules_db.guess_game_from_prompt(prompt) or rules_db.infer_game_from_entities(prompt)
+    guessed_label = guessed_game.replace("_", " ").title() if guessed_game else "another game"
+    selected_label = selected_game.replace("_", " ").title()
+    return AssistantResponse(
+        ruling=(
+            f"This looks like a {guessed_label} question, but your game filter is set to {selected_label}."
         ),
         follow_up=(
-            "Please include exact card or role names, whose turn it is, and current phase."
+            f"Please switch the game filter to {guessed_label} or ask a {selected_label} rules question."
         ),
     )
+
+
+def _build_not_specified_response(game: str) -> AssistantResponse:
+    game_label = game.replace("_", " ").title()
+    return AssistantResponse(
+        ruling=(
+            f"This case is not specified in the official {game_label} rules used in this project."
+        ),
+        follow_up=(
+            "Please use a host/house ruling for this scenario, or provide exact phase and setup details."
+        ),
+    )
+
+
+def _is_too_generic_for_ruling(prompt: str) -> bool:
+    generic_terms = {"this", "that", "it", "now", "then", "there", "here", "thing"}
+    terms = rules_db.significant_query_terms(prompt)
+    if not terms:
+        return True
+    meaningful = [term for term in terms if term not in generic_terms]
+    return len(meaningful) == 0
+
+
+def _is_werewolves_unspecified_interaction(prompt: str) -> bool:
+    text = prompt.lower()
+
+    if "another werewolf" in text or "other werewolf" in text:
+        return True
+
+    role_terms = [
+        "werewolf",
+        "werewolves",
+        "witch",
+        "mayor",
+        "little girl",
+        "hunter",
+        "seer",
+        "cupid",
+        "villager",
+    ]
+    interaction_terms = [
+        "kill",
+        "kills",
+        "killed",
+        "poison",
+        "poisons",
+        "target",
+        "targets",
+        "attack",
+        "attacks",
+    ]
+    question_terms = [
+        "what happens if",
+        "can",
+        "is it allowed",
+    ]
+
+    role_hits = sum(1 for role in role_terms if role in text)
+    has_interaction = any(term in text for term in interaction_terms)
+    has_question = any(term in text for term in question_terms)
+
+    return role_hits >= 2 and has_interaction and has_question
 
 
 def _build_unknown_entity_response(game: str, unknown_entities: list[str]) -> AssistantResponse:
     names = ", ".join(unknown_entities)
     hint = rules_db.defined_entities_hint(game)
     game_label = game.replace("_", " ").title()
-    return AssistantResponse(
-        ruling=(
+    if len(unknown_entities) == 1:
+        ruling = (
             f"In official {game_label} rules used by this project, {names} is not a defined card or component."
-        ),
+        )
+    else:
+        ruling = (
+            f"In official {game_label} rules used by this project, {names} are not defined cards or components."
+        )
+    return AssistantResponse(
+        ruling=ruling,
         follow_up=(
             "Try a defined card or role instead"
             + (f" (examples: {hint})." if hint else ".")
@@ -105,8 +223,8 @@ def _handle_uno_out_of_turn(prompt: str) -> AssistantResponse | None:
             "No. In official UNO, you can only play on your own turn, "
             "even if your card color and number match the discard pile."
         ),
-        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260),
-        source=f"{primary.game} - {primary.section}",
+        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        source=f"{primary.game.title()} - {primary.section}",
     )
 
 
@@ -116,12 +234,7 @@ def _handle_uno_wild_draw_four(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "wild draw four only if no matching color", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling=(
@@ -141,12 +254,7 @@ def _handle_uno_reverse(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "reverse reverses direction of play", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Reverse reverses the direction of play.",
@@ -163,12 +271,7 @@ def _handle_uno_stacking(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "stacking do not allow", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Official UNO rules do NOT allow stacking draw penalties.",
@@ -185,12 +288,7 @@ def _handle_uno_choose_draw(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "choose not to play a playable card draw a card", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Yes. You may choose NOT to play a playable card and instead draw a card.",
@@ -209,12 +307,7 @@ def _handle_uno_draw_playable(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "drawn card can be played in the same turn", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Yes. If the drawn card is playable, you may play it in the same turn.",
@@ -241,7 +334,7 @@ def _handle_uno_unknown_named_card(prompt: str) -> AssistantResponse | None:
     if card_name in known_named_cards or re.fullmatch(r"\+[24]", card_name):
         return None
 
-    return _build_not_found_response()
+    return _build_unknown_entity_response("uno", [card_name])
 
 
 def _handle_uno_plus4_challenge(prompt: str) -> AssistantResponse | None:
@@ -252,15 +345,48 @@ def _handle_uno_plus4_challenge(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("uno", "challenger draws plus 2 6 total", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="If the challenge fails, the challenger draws the 4 cards PLUS 2 more cards, for 6 total.",
+        evidence=evidence,
+        source=source,
+    )
+
+
+def _handle_uno_multi_card_play(prompt: str) -> AssistantResponse | None:
+    text = prompt.lower()
+
+    asks_multi_play = (
+        "play two cards" in text
+        or "2 cards" in text
+        or "two cards" in text
+        or "double" in text
+        or "at once" in text
+        or "same turn" in text
+    )
+    mentions_matching = (
+        "same number" in text
+        or "same color" in text
+        or "same colour" in text
+        or "matching" in text
+    )
+    mentions_play_action = "play" in text or "put" in text or "drop" in text
+
+    if not (mentions_play_action and asks_multi_play):
+        return None
+
+    if not mentions_matching and "one turn" not in text and "same turn" not in text:
+        return None
+
+    chunks = rules_db.retrieve_rules("uno", "on player's turn must match discard", top_k=1)
+    source, evidence = _citation_from_chunks(chunks, prompt)
+
+    return AssistantResponse(
+        ruling=(
+            "No. In official UNO rules, you play one card per turn. "
+            "Playing two matching cards together is a house rule, not part of official core rules."
+        ),
         evidence=evidence,
         source=source,
     )
@@ -280,12 +406,7 @@ def _handle_werewolves_role_overlap(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "each player is secretly dealt one character card", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling=(
@@ -320,8 +441,8 @@ def _handle_werewolves_little_girl(prompt: str) -> AssistantResponse | None:
             "The Little Girl can secretly peek only while the Werewolves are awake. "
             "If she is caught peeking, she is immediately killed."
         ),
-        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260),
-        source=f"{primary.game} - {primary.section}",
+        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        source=f"{primary.game.title()} - {primary.section}",
     )
 
 
@@ -334,12 +455,7 @@ def _handle_werewolves_witch_potions(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "witch can use both potions in the same night", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Yes. The Witch can use both potions in the same night.",
@@ -354,12 +470,7 @@ def _handle_werewolves_hunter(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "hunter must fire and die instantly", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling=(
@@ -376,12 +487,7 @@ def _handle_werewolves_mayor_death(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "if mayor is killed choose successor", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="If the Mayor dies, they choose their successor.",
@@ -398,12 +504,7 @@ def _handle_werewolves_little_girl_caught(prompt: str) -> AssistantResponse | No
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "little girl immediately killed instead of original victim", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="If caught peeking, the Little Girl is immediately killed instead of their original victim.",
@@ -420,12 +521,7 @@ def _handle_werewolves_witch_heal_self(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "witch can use the healing potion on herself", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="Yes. The Witch CAN use the healing potion on herself.",
@@ -442,12 +538,7 @@ def _handle_werewolves_mayor_votes(prompt: str) -> AssistantResponse | None:
         return None
 
     chunks = rules_db.retrieve_rules("werewolves", "mayor counts as two votes", top_k=1)
-    evidence = None
-    source = None
-    if chunks:
-        primary = chunks[0]
-        evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-        source = f"{primary.game} - {primary.section}"
+    source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
         ruling="The Mayor's vote counts as TWO votes.",
@@ -461,14 +552,26 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
     if selected_game and normalized_selected is None:
         return _build_unsupported_response()
 
-    game = normalized_selected or rules_db.guess_game_from_prompt(prompt)
-    if game is None:
-        game = rules_db.infer_game_from_entities(prompt)
+    prompt_guess = rules_db.guess_game_from_prompt(prompt)
+    prompt_infer = rules_db.infer_game_from_entities(prompt)
+
+    if normalized_selected is not None:
+        inferred_from_prompt = prompt_guess or prompt_infer
+        if inferred_from_prompt and inferred_from_prompt != normalized_selected:
+            return _build_game_mismatch_response(normalized_selected, prompt)
+        game = normalized_selected
+    else:
+        game = prompt_guess or prompt_infer
+
     if game is None:
         return _build_unsupported_response()
 
     if game == "uno":
         # Handle precise known intent patterns before unknown-entity checks.
+        multi_card_play = _handle_uno_multi_card_play(prompt)
+        if multi_card_play is not None:
+            return multi_card_play
+
         draw_playable = _handle_uno_draw_playable(prompt)
         if draw_playable is not None:
             return draw_playable
@@ -477,13 +580,18 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
         if unknown_named_card is not None:
             return unknown_named_card
 
+    if game == "werewolves" and _is_werewolves_unspecified_interaction(prompt):
+        return _build_not_specified_response(game)
+
     unknown_entities = rules_db.find_unknown_entities(game, prompt)
     if unknown_entities:
-        if any(not re.fullmatch(r"\+[0-9]+", entity) for entity in unknown_entities):
-            return _build_not_found_response()
         return _build_unknown_entity_response(game, unknown_entities)
 
     if game == "uno":
+        multi_card_play = _handle_uno_multi_card_play(prompt)
+        if multi_card_play is not None:
+            return multi_card_play
+
         stacking = _handle_uno_stacking(prompt)
         if stacking is not None:
             return stacking
@@ -491,10 +599,6 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
         choose_draw = _handle_uno_choose_draw(prompt)
         if choose_draw is not None:
             return choose_draw
-
-        draw_playable = _handle_uno_draw_playable(prompt)
-        if draw_playable is not None:
-            return draw_playable
 
         plus4_challenge = _handle_uno_plus4_challenge(prompt)
         if plus4_challenge is not None:
@@ -545,17 +649,18 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
         if mayor_death is not None:
             return mayor_death
 
+    if _is_too_generic_for_ruling(prompt):
+        return _build_not_found_response(prompt, game)
+
     chunks = rules_db.retrieve_rules(game=game, query=prompt, top_k=1)
     if not chunks:
-        return _build_not_found_response()
+        return _build_not_found_response(prompt, game)
 
     primary = chunks[0]
-    evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=260)
-    section = f"{primary.game} - {primary.section}"
     ruling = _natural_ruling(prompt, game, primary.text)
 
     return AssistantResponse(
         ruling=ruling,
-        evidence=evidence,
-        source=section,
+        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        source=f"{primary.game.title()} - {primary.section}",
     )
