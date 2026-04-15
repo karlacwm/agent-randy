@@ -36,10 +36,10 @@ During the Night phase, everyone closes their eyes. The Moderator calls upon spe
 
 ## Phase 2: The Day
 1. Everyone opens their eyes.
-2. The Moderator announces who was killed during the night. 
+2. The Moderator announces who was killed during the night.
 3. **The Hunter (Reaction):** If the Hunter is killed (either at night or voted out during the day), they immediately reveal their card and MUST fire their gun, choosing one other player to die instantly with them.
 4. **Discussion:** The surviving players debate who the Werewolves might be.
-5. **Voting:** The village votes on who to execute. The player with the majority of votes is executed, reveals their card, and is eliminated. 
+5. **Voting:** The village votes on who to execute. The player with the majority of votes is executed, reveals their card, and is eliminated.
 
 ## Special Rules & Edge Cases
 - **The Mayor:** Elected by the village during the first day. The Mayor's vote counts as TWO votes. If the Mayor is killed, they choose their successor with their dying breath.

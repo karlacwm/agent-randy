@@ -1,3 +1,4 @@
+from app.services.agent import answer_question
 import json
 from pathlib import Path
 import sys
@@ -6,8 +7,6 @@ import sys
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-
-from app.services.agent import answer_question
 
 
 EVAL_PATH = ROOT_DIR / "data" / "evaluation_data" / "eval_data.json"
@@ -19,7 +18,8 @@ def run_case(question: str, selected_game: str | None = None) -> dict:
 
 def score_case(output: dict, must_include: list[str]) -> tuple[bool, list[str]]:
     output_text = json.dumps(output, ensure_ascii=False).lower()
-    missing = [needle for needle in must_include if needle.lower() not in output_text]
+    missing = [needle for needle in must_include if needle.lower()
+               not in output_text]
     return len(missing) == 0, missing
 
 

@@ -1,5 +1,6 @@
 __pycache__/
-.venv
+.mypy_cache/
+.venv/
 .env
 gcloud.json
 store.json

@@ -1,7 +1,8 @@
 
-# Randy
+# Agent Randy
 
 The idea and inspiration of this project is:
+
 Everyone needs a Randy to play boardgames with!
 
 This is a project about building an AI agent for a rules-referee agent focused on two games:

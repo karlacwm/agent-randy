@@ -47,7 +47,8 @@ def _citation_from_chunks(chunks: list[rules_db.RuleChunk], prompt: str) -> tupl
 
     primary = chunks[0]
     source = f"{primary.game.title()} - {primary.section}"
-    evidence = rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt)
+    evidence = rules_db.quote_rule(
+        primary.game, primary.chunk_id, max_chars=420, query=prompt)
     return source, evidence
 
 
@@ -100,8 +101,10 @@ def _build_not_found_response(prompt: str, game: str) -> AssistantResponse:
 
 
 def _build_game_mismatch_response(selected_game: str, prompt: str) -> AssistantResponse:
-    guessed_game = rules_db.guess_game_from_prompt(prompt) or rules_db.infer_game_from_entities(prompt)
-    guessed_label = guessed_game.replace("_", " ").title() if guessed_game else "another game"
+    guessed_game = rules_db.guess_game_from_prompt(
+        prompt) or rules_db.infer_game_from_entities(prompt)
+    guessed_label = guessed_game.replace(
+        "_", " ").title() if guessed_game else "another game"
     selected_label = selected_game.replace("_", " ").title()
     return AssistantResponse(
         ruling=(
@@ -126,7 +129,8 @@ def _build_not_specified_response(game: str) -> AssistantResponse:
 
 
 def _is_too_generic_for_ruling(prompt: str) -> bool:
-    generic_terms = {"this", "that", "it", "now", "then", "there", "here", "thing"}
+    generic_terms = {"this", "that", "it",
+                     "now", "then", "there", "here", "thing"}
     terms = rules_db.significant_query_terms(prompt)
     if not terms:
         return True
@@ -211,7 +215,8 @@ def _handle_uno_out_of_turn(prompt: str) -> AssistantResponse | None:
     if not (mentions_out_of_turn and mentions_play_action):
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "on player's turn must match discard", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "on player's turn must match discard", top_k=1)
     if not chunks:
         return AssistantResponse(
             ruling="No. In official UNO, you can only play on your own turn.",
@@ -223,7 +228,8 @@ def _handle_uno_out_of_turn(prompt: str) -> AssistantResponse | None:
             "No. In official UNO, you can only play on your own turn, "
             "even if your card color and number match the discard pile."
         ),
-        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        evidence=rules_db.quote_rule(
+            primary.game, primary.chunk_id, max_chars=420, query=prompt),
         source=f"{primary.game.title()} - {primary.section}",
     )
 
@@ -233,7 +239,8 @@ def _handle_uno_wild_draw_four(prompt: str) -> AssistantResponse | None:
     if "wild draw four" not in text and "+4" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "wild draw four only if no matching color", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "wild draw four only if no matching color", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -253,7 +260,8 @@ def _handle_uno_reverse(prompt: str) -> AssistantResponse | None:
     if "what does" not in text and "effect" not in text and "do" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "reverse reverses direction of play", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "reverse reverses direction of play", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -287,7 +295,8 @@ def _handle_uno_choose_draw(prompt: str) -> AssistantResponse | None:
     if "playable" not in text and "can play" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "choose not to play a playable card draw a card", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "choose not to play a playable card draw a card", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -306,7 +315,8 @@ def _handle_uno_draw_playable(prompt: str) -> AssistantResponse | None:
     if "same turn" not in text and "immediately" not in text and "may i play" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "drawn card can be played in the same turn", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "drawn card can be played in the same turn", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -344,7 +354,8 @@ def _handle_uno_plus4_challenge(prompt: str) -> AssistantResponse | None:
     if "challenge" not in text or "fails" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "challenger draws plus 2 6 total", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "challenger draws plus 2 6 total", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -379,7 +390,8 @@ def _handle_uno_multi_card_play(prompt: str) -> AssistantResponse | None:
     if not mentions_matching and "one turn" not in text and "same turn" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("uno", "on player's turn must match discard", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "uno", "on player's turn must match discard", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -405,7 +417,8 @@ def _handle_werewolves_role_overlap(prompt: str) -> AssistantResponse | None:
     if not (asks_overlap and mentions_witch and mentions_little_girl):
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "each player is secretly dealt one character card", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "each player is secretly dealt one character card", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -431,7 +444,8 @@ def _handle_werewolves_little_girl(prompt: str) -> AssistantResponse | None:
     if not (mentions_little_girl and asks_effect):
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "little girl only while werewolves are awake", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "little girl only while werewolves are awake", top_k=1)
     if not chunks:
         return None
 
@@ -441,7 +455,8 @@ def _handle_werewolves_little_girl(prompt: str) -> AssistantResponse | None:
             "The Little Girl can secretly peek only while the Werewolves are awake. "
             "If she is caught peeking, she is immediately killed."
         ),
-        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        evidence=rules_db.quote_rule(
+            primary.game, primary.chunk_id, max_chars=420, query=prompt),
         source=f"{primary.game.title()} - {primary.section}",
     )
 
@@ -454,7 +469,8 @@ def _handle_werewolves_witch_potions(prompt: str) -> AssistantResponse | None:
     if not (mentions_witch and mentions_potions and asks_both):
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "witch can use both potions in the same night", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "witch can use both potions in the same night", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -469,7 +485,8 @@ def _handle_werewolves_hunter(prompt: str) -> AssistantResponse | None:
     if "hunter" not in text or "dies" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "hunter must fire and die instantly", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "hunter must fire and die instantly", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -486,7 +503,8 @@ def _handle_werewolves_mayor_death(prompt: str) -> AssistantResponse | None:
     if "mayor" not in text or "dies" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "if mayor is killed choose successor", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "if mayor is killed choose successor", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -503,7 +521,8 @@ def _handle_werewolves_little_girl_caught(prompt: str) -> AssistantResponse | No
     if "catch" not in text and "caught" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "little girl immediately killed instead of original victim", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "little girl immediately killed instead of original victim", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -520,7 +539,8 @@ def _handle_werewolves_witch_heal_self(prompt: str) -> AssistantResponse | None:
     if "heal herself" not in text and "heal self" not in text and "healing potion on herself" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "witch can use the healing potion on herself", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "witch can use the healing potion on herself", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -537,7 +557,8 @@ def _handle_werewolves_mayor_votes(prompt: str) -> AssistantResponse | None:
     if "how many votes" not in text and "vote" not in text and "two votes" not in text:
         return None
 
-    chunks = rules_db.retrieve_rules("werewolves", "mayor counts as two votes", top_k=1)
+    chunks = rules_db.retrieve_rules(
+        "werewolves", "mayor counts as two votes", top_k=1)
     source, evidence = _citation_from_chunks(chunks, prompt)
 
     return AssistantResponse(
@@ -661,6 +682,7 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
 
     return AssistantResponse(
         ruling=ruling,
-        evidence=rules_db.quote_rule(primary.game, primary.chunk_id, max_chars=420, query=prompt),
+        evidence=rules_db.quote_rule(
+            primary.game, primary.chunk_id, max_chars=420, query=prompt),
         source=f"{primary.game.title()} - {primary.section}",
     )

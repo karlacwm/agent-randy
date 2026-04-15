@@ -23,7 +23,7 @@ The first player to play all of the cards in their hand points scores points for
 
 ## Wild Cards
 - **Wild Card:** The player who plays this card calls the color that continues play. A Wild card can be played even if the player has another playable card in their hand.
-- **Wild Draw Four (+4):** The player who plays this card calls the next color, AND the next player must draw 4 cards and miss their turn. 
+- **Wild Draw Four (+4):** The player who plays this card calls the next color, AND the next player must draw 4 cards and miss their turn.
   - *Restriction:* A player can ONLY play this card when they do NOT have a card in their hand that matches the COLOR of the discard pile. (They can have matching numbers or Action Cards).
 
 ## Defined Cards (Official)

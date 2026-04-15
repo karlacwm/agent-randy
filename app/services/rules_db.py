@@ -301,7 +301,7 @@ def retrieve_rules(game: str, query: str, top_k: int = 3) -> list[RuleChunk]:
         # Boost exact phrase overlap for longer keyword sequences.
         for size in (3, 2):
             for idx in range(0, max(0, len(query_tokens) - size + 1)):
-                phrase = " ".join(query_tokens[idx : idx + size])
+                phrase = " ".join(query_tokens[idx: idx + size])
                 if phrase and phrase in chunk_text and phrase in query_text:
                     score += 3.5
 
@@ -321,7 +321,8 @@ def quote_rule(game: str, chunk_id: str, max_chars: int = 800, query: str | None
             return text
 
         snippet = text[:limit].rstrip()
-        sentence_end = max(snippet.rfind(". "), snippet.rfind("! "), snippet.rfind("? "))
+        sentence_end = max(snippet.rfind(
+            ". "), snippet.rfind("! "), snippet.rfind("? "))
         if sentence_end >= int(limit * 0.6):
             return snippet[: sentence_end + 1].rstrip()
         return snippet + "..."
@@ -334,7 +335,8 @@ def quote_rule(game: str, chunk_id: str, max_chars: int = 800, query: str | None
                 return trim_with_sentence_boundary(quote, max_chars)
 
             query_terms = set(_query_terms(query))
-            sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", quote) if part.strip()]
+            sentences = [part.strip() for part in re.split(
+                r"(?<=[.!?])\s+", quote) if part.strip()]
             if not sentences:
                 return trim_with_sentence_boundary(quote, max_chars)
 
@@ -383,13 +385,15 @@ def find_unknown_entities(game: str, prompt: str) -> list[str]:
             unknown.add(plus_card)
 
     # Flag phrase candidates after verbs that usually introduce components.
-    pattern = re.compile(r"(?:play|use|choose|draw|is|a|an)\s+([a-z0-9+][a-z0-9+\s-]{0,20})")
+    pattern = re.compile(
+        r"(?:play|use|choose|draw|is|a|an)\s+([a-z0-9+][a-z0-9+\s-]{0,20})")
     for match in pattern.findall(text):
         candidate = match.strip(" .?!,;:")
         if not candidate or len(candidate) < 2:
             continue
 
-        candidate_tokens = [tok for tok in re.findall(r"[a-z0-9+]+", candidate) if tok]
+        candidate_tokens = [tok for tok in re.findall(
+            r"[a-z0-9+]+", candidate) if tok]
         if not candidate_tokens:
             continue
 
@@ -401,7 +405,8 @@ def find_unknown_entities(game: str, prompt: str) -> list[str]:
         if candidate_norm in entities["phrases"]:
             continue
 
-        token_check = [tok for tok in candidate_tokens if tok not in ENTITY_IGNORE_TERMS]
+        token_check = [
+            tok for tok in candidate_tokens if tok not in ENTITY_IGNORE_TERMS]
         if not token_check:
             continue
 

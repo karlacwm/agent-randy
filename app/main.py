@@ -11,35 +11,36 @@ load_dotenv()
 
 
 def _load_eval_questions() -> dict[str, list[str]]:
-  eval_data_path = Path(__file__).resolve().parents[1] / "data" / "evaluation_data" / "eval_data.json"
-  questions_by_game: dict[str, list[str]] = {
-    "all": [],
-    "uno": [],
-    "werewolves": [],
-  }
+    eval_data_path = Path(__file__).resolve(
+    ).parents[1] / "data" / "evaluation_data" / "eval_data.json"
+    questions_by_game: dict[str, list[str]] = {
+        "all": [],
+        "uno": [],
+        "werewolves": [],
+    }
 
-  try:
-    payload = json.loads(eval_data_path.read_text(encoding="utf-8"))
-    items = payload.get("items", [])
-    seen: set[str] = set()
+    try:
+        payload = json.loads(eval_data_path.read_text(encoding="utf-8"))
+        items = payload.get("items", [])
+        seen: set[str] = set()
 
-    for item in items:
-      question = (item.get("question") or "").strip()
-      metadata = item.get("metadata") or {}
-      game = (metadata.get("game") or "").strip().lower()
+        for item in items:
+            question = (item.get("question") or "").strip()
+            metadata = item.get("metadata") or {}
+            game = (metadata.get("game") or "").strip().lower()
 
-      if not question or question in seen:
-        continue
+            if not question or question in seen:
+                continue
 
-      seen.add(question)
-      questions_by_game["all"].append(question)
+            seen.add(question)
+            questions_by_game["all"].append(question)
 
-      if game in questions_by_game:
-        questions_by_game[game].append(question)
-  except Exception:
+            if game in questions_by_game:
+                questions_by_game[game].append(question)
+    except Exception:
+        return questions_by_game
+
     return questions_by_game
-
-  return questions_by_game
 
 
 EVAL_QUESTIONS_BY_GAME = _load_eval_questions()
@@ -55,7 +56,7 @@ async def health_check():
 
 @app.get("/", response_class=HTMLResponse)
 async def home_page() -> str:
-  html = """
+    html = """
 <!doctype html>
 <html lang="en">
   <head>
@@ -575,10 +576,10 @@ async def home_page() -> str:
   </body>
 </html>
     """
-  return html.replace("__EVAL_QUESTIONS_JSON__", json.dumps(EVAL_QUESTIONS_BY_GAME))
+    return html.replace("__EVAL_QUESTIONS_JSON__", json.dumps(EVAL_QUESTIONS_BY_GAME))
 
 
 if __name__ == "__main__":
-  import uvicorn
+    import uvicorn
 
-  uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
