@@ -1,0 +1,172 @@
+{
+  "items": [
+    {
+      "question": "In UNO, can I stack a +2 on another +2?",
+      "expected_output": "Official UNO rules do not allow stacking.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["do NOT allow stacking"]
+      }
+    },
+    {
+      "question": "In UNO, can I play my card when it is not my turn, but color and number match?",
+      "expected_output": "No. You can only play on your own turn.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["only play on your own turn"]
+      }
+    },
+    {
+      "question": "In UNO, what happens if I forget to say UNO and someone catches me before the next turn starts?",
+      "expected_output": "You draw 2 cards as penalty.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["draw 2", "before the next player begins"]
+      }
+    },
+    {
+      "question": "In UNO, can I choose to draw even if I have a playable card?",
+      "expected_output": "Yes, you may choose not to play and draw one card.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["choose NOT", "draw a card"]
+      }
+    },
+    {
+      "question": "In UNO, if I draw a playable card, may I play it immediately?",
+      "expected_output": "Yes, if the drawn card can be played, you can play it in the same turn.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["same turn"]
+      }
+    },
+    {
+      "question": "In UNO, can Wild card be played even if I have another playable card?",
+      "expected_output": "Yes, Wild can be played even with another playable card.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["can be played even", "another playable card"]
+      }
+    },
+    {
+      "question": "In UNO, if the +4 challenge fails, what is the challenger's penalty?",
+      "expected_output": "The challenger draws 6 cards total.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["PLUS 2", "6 total"]
+      }
+    },
+    {
+      "question": "In UNO, what does Reverse do?",
+      "expected_output": "It reverses direction of play.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["reverses the direction"]
+      }
+    },
+    {
+      "question": "In Werewolves, what does the Little Girl card do?",
+      "expected_output": "She may peek only while Werewolves are awake; if caught, she is killed.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["only while", "caught", "killed"]
+      }
+    },
+    {
+      "question": "In Werewolves, can the Witch also be the Little Girl?",
+      "expected_output": "No. A player has one character card.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["one character card", "cannot be both"]
+      }
+    },
+    {
+      "question": "In Werewolves, can the Witch use both potions in one night?",
+      "expected_output": "Yes, both potions can be used in the same night.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["both potions", "same night"]
+      }
+    },
+    {
+      "question": "In Werewolves, what happens if the Hunter dies?",
+      "expected_output": "The Hunter must immediately choose one player to die with them.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["MUST fire", "die instantly"]
+      }
+    },
+    {
+      "question": "In Werewolves, what happens if one Lover dies?",
+      "expected_output": "The other lover immediately dies too.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["one lover dies", "other immediately dies"]
+      }
+    },
+    {
+      "question": "In Werewolves, can dead players still talk during discussion?",
+      "expected_output": "No, dead players must not speak or participate.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["must not speak", "participate"]
+      }
+    },
+    {
+      "question": "In Werewolves, when can the Little Girl peek?",
+      "expected_output": "Only while Werewolves are awake.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["only while the Werewolves are awake"]
+      }
+    },
+    {
+      "question": "In Werewolves, what if werewolves catch the Little Girl peeking?",
+      "expected_output": "She is immediately killed instead of original victim.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["immediately killed", "instead of their original victim"]
+      }
+    },
+    {
+      "question": "In Werewolves, can the Witch heal herself?",
+      "expected_output": "Yes, the Witch can use healing potion on herself.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["CAN use the healing potion on herself"]
+      }
+    },
+    {
+      "question": "In Werewolves, how many votes does the Mayor have?",
+      "expected_output": "The Mayor has two votes.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["counts as TWO votes"]
+      }
+    },
+    {
+      "question": "In Werewolves, if the Mayor dies, what happens next?",
+      "expected_output": "The Mayor chooses a successor.",
+      "metadata": {
+        "game": "werewolves",
+        "must_include": ["choose their successor"]
+      }
+    },
+    {
+      "question": "In Catan, what does the robber do?",
+      "expected_output": "Unsupported game in this project.",
+      "metadata": {
+        "game": "unsupported",
+        "must_include": ["unsupported", "uno", "werewolves"]
+      }
+    },
+    {
+      "question": "In UNO, what does the Dragon card do?",
+      "expected_output": "No matching official rule found for that card.",
+      "metadata": {
+        "game": "uno",
+        "must_include": ["could not locate"]
+      }
+    }
+  ]
+}

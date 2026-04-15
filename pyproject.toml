@@ -1,0 +1,11 @@
+[project]
+name = "boardgame-rules-agent"
+version = "0.1.0"
+description = "Randy: Everyone needs a Randy to play boardgame with"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "python-dotenv>=1.0.1",
+    "uvicorn>=0.30.0",
+]
