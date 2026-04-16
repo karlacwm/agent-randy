@@ -7,7 +7,7 @@ Everyone needs a Randy to play boardgames with!
 
 This is a project about building an AI agent for a rules-referee agent focused on two games:
 - UNO
-- Werewolves of Miller's Hollow
+- Werewolves
 
 The agent answers real game situations with:
 - Reference to game rules
@@ -24,7 +24,6 @@ The current implementation uses a dynamic LLM agent (Randy) with tool-calling:
 
 - UNO: https://www.bsbwlibrary.org/wp-content/uploads/2023/08/Uno.pdf
 - Werewolves: https://www.zygomatic-games.com/wp-content/uploads/2020/04/werewolvesofmillershollow_en_rules_compressed.pdf
-- Architects of the West Kingdom (optional future extension): https://cdn.1j1ju.com/medias/80/41/3d-architects-of-the-west-kingdom-rulebook.pdf
 
 ## Quickstart
 
@@ -53,7 +52,6 @@ uv run python -m app.main
 - Empty prompt returns a 400 with clear message.
 - Unsupported game returns a safe response plus supported game list.
 - Unknown scenario returns a clarification request.
-- Session history is capped to avoid memory growth.
 
 ## API Endpoints
 

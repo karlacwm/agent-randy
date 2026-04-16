@@ -4,7 +4,6 @@ import os
 import importlib
 from pathlib import Path
 from typing import Any
-import re
 
 from app.models.assistant import AssistantResponse
 from app.services import rules_db
@@ -150,6 +149,8 @@ def _get_rules_agent() -> Any:
             "Only answer with official rules from local retrieval "
             "tools; do not invent rules. "
             "Always use tools before finalizing. "
+            "Always include both 'evidence' and 'source' in your final "
+            "response. "
             "If the scenario is unclear or unsupported, set "
             "follow_up with a specific clarifying question. "
             "When possible, provide a direct short quote in evidence "
@@ -212,275 +213,72 @@ def _build_user_input(game: str, prompt: str) -> str:
         "Pre-check unknown entities: "
         f"{', '.join(unknown) if unknown else 'None'}\n"
         "Instructions: use tools to retrieve best matching chunk(s), "
-        "include one direct quote in evidence and "
-        "the matching '<game> - <section>' citation in source when available."
+        "include one direct quote in evidence, and include "
+        "the matching '<game> - <section>' citation in source."
     )
 
 
-def _is_too_generic(prompt: str) -> bool:
-    terms = rules_db.significant_query_terms(prompt)
-    if not terms:
-        return True
-    generic = {
-        "this",
-        "that",
-        "it",
-        "now",
-        "then",
-        "there",
-        "here",
-        "thing",
-    }
-    meaningful = [term for term in terms if term not in generic]
-    return len(meaningful) == 0
+def _extract_agent_output(result: Any) -> AssistantResponse:
+    output = getattr(result, "output", None)
+    if isinstance(output, AssistantResponse):
+        return output
+
+    data = getattr(result, "data", None)
+    if isinstance(data, AssistantResponse):
+        return data
+
+    raise ValueError("Agent returned an unexpected output shape.")
 
 
-def _deterministic_eval_response(
+def _enrich_details(
     game: str,
     prompt: str,
-) -> AssistantResponse | None:
-    text = prompt.lower()
+    response: AssistantResponse,
+) -> AssistantResponse:
+    evidence = response.evidence
+    source = response.source
 
-    if _is_too_generic(prompt):
-        return AssistantResponse(
-            ruling="I need more specific details to help you.",
-            follow_up=(
-                "Please share the exact card or role, "
-                "plus the current turn or phase."
-            ),
+    if evidence and source:
+        return response
+
+    chunks = rules_db.retrieve_rules(game=game, query=prompt, top_k=1)
+    if chunks:
+        best = chunks[0]
+        source = source or f"{best.game.title()} - {best.section}"
+        evidence = evidence or rules_db.quote_rule(
+            best.game,
+            best.chunk_id,
+            max_chars=420,
+            query=prompt,
         )
 
-    if game == "uno":
-        if "dragon card" in text:
-            return AssistantResponse(
-                ruling="In official UNO rules, Dragon is not a defined card.",
-            )
+    evidence = (
+        evidence
+        or "No direct quote was found for this exact phrasing "
+        "in local rule chunks."
+    )
+    source = source or f"{game.title()} - Source unavailable"
 
-        if "little girl card" in text:
-            return AssistantResponse(
-                ruling=(
-                    "In official UNO rules, Little Girl is not defined "
-                    "as a card."
-                ),
-                follow_up="Please ask about an official UNO card.",
-            )
+    return AssistantResponse(
+        ruling=response.ruling,
+        evidence=evidence,
+        source=source,
+        follow_up=response.follow_up,
+    )
 
-        if (
-            "draw" in text
-            and "playable" in text
-            and "immediately" in text
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "Yes. If the drawn card is playable, you may "
-                    "play it in the same turn."
-                ),
-            )
 
-        if (
-            ("stack" in text)
-            and any(token in text for token in ["+2", "+4", "draw two"])
-        ):
-            return AssistantResponse(
-                ruling="Official UNO rules do NOT allow stacking.",
-                follow_up="This stacking behavior is a house rule variant.",
-            )
+def _run_agent_sync(game: str, prompt: str) -> AssistantResponse:
+    _ensure_google_credentials()
+    user_input = _build_user_input(game, prompt)
+    result = _get_rules_agent().run_sync(user_input)
+    return _extract_agent_output(result)
 
-        if (
-            ("not my turn" in text or "out of turn" in text)
-            and re.search(r"\bplay\b", text) is not None
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "No. In official UNO, you can only play "
-                    "on your own turn."
-                ),
-            )
 
-        if (
-            ("challenge" in text)
-            and ("wild draw 4" in text or "+4" in text)
-            and any(token in text for token in ["fails", "innocent"])
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "If the challenge fails, the challenger draws the "
-                    "4 cards PLUS 2 more cards, for 6 total."
-                ),
-            )
-
-        if (
-            "forgot to say uno" in text
-            and "next player" in text
-            and "finished" in text
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "No. The penalty applies only if you are caught "
-                    "before the next player begins their turn."
-                ),
-            )
-
-        if (
-            "wild draw four" in text
-            and "blue 7" in text
-            and "blue 5" in text
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "No. You can only play a Wild Draw Four when you "
-                    "do not have a card that matches the color."
-                ),
-            )
-
-        if (
-            "swap hands" in text
-            and re.search(r"\b0\b", text) is not None
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "This is not covered in the official UNO rules "
-                    "used in this project."
-                ),
-                follow_up="Use a house rule only if your table agrees.",
-            )
-
-        if (
-            re.search(r"\bplay\b|\bput down\b", text) is not None
-            and any(
-                phrase in text
-                for phrase in [
-                    "two cards",
-                    "2 cards",
-                    "at once",
-                    "same turn",
-                ]
-            )
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "Official UNO uses one card per turn. "
-                    "Multi-card play is a house rule, not part of "
-                    "official core rules."
-                ),
-            )
-
-        if "slam" in text and "hands" in text and "7" in text:
-            return AssistantResponse(
-                ruling=(
-                    "I could not locate a direct official rule match for "
-                    "this scenario."
-                ),
-                follow_up=(
-                    "Official rules here do not explicitly cover this; "
-                    "it appears to be a house rule."
-                ),
-            )
-
-    if game == "werewolves":
-        if "little girl" in text and "what does" in text:
-            return AssistantResponse(
-                ruling=(
-                    "The Little Girl may peek only while the Werewolves "
-                    "are awake; if caught, she is immediately killed."
-                ),
-            )
-
-        if (
-            "witch" in text
-            and "little girl" in text
-            and ("both" in text or "also be" in text)
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "No. Each player has one character card, so they "
-                    "cannot be both roles."
-                ),
-            )
-
-        if "hunter" in text and "dies" in text:
-            return AssistantResponse(
-                ruling=(
-                    "If the Hunter dies, they MUST fire immediately "
-                    "and choose one player to die instantly."
-                ),
-            )
-
-        if "when can" in text and "little girl" in text and "peek" in text:
-            return AssistantResponse(
-                ruling="Only while the Werewolves are awake.",
-            )
-
-        if (
-            "little girl" in text
-            and ("caught" in text or "catch" in text)
-            and "peek" in text
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "If caught peeking, she is immediately killed "
-                    "instead of their original victim."
-                ),
-            )
-
-        if (
-            "witch" in text
-            and "heal" in text
-            and any(token in text for token in ["herself", "self"])
-            and any(
-                token in text
-                for token in ["poison", "both", "same night"]
-            )
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "Yes. The Witch can heal herself and can use both "
-                    "potions in the same night."
-                ),
-            )
-
-        unspecified = [
-            "witch poison the mayor",
-            "witch poisons the mayor",
-            "werewolf kills the little girl",
-            "werewolf kills another werewolf",
-            "a werewolf kills another werewolf",
-            "hunter kill the mayor at night",
-            "witch poisons the seer",
-        ]
-        if any(phrase in text for phrase in unspecified):
-            return AssistantResponse(
-                ruling=(
-                    "This case is not specified in the official "
-                    "Werewolves rules used in this project."
-                ),
-                follow_up="Please use a host or house ruling.",
-            )
-
-        if (
-            "cupid" in text
-            and "hunter" in text
-            and "seer" in text
-            and "lovers" in text
-        ):
-            return AssistantResponse(
-                ruling=(
-                    "The Seer dies. The Hunter dies of a broken heart, "
-                    "then MUST fire their gun and choose another player "
-                    "to die."
-                ),
-            )
-
-        if "eyeball" in text and "hidden role" in text:
-            return AssistantResponse(
-                ruling=(
-                    "You are likely the Seer in Werewolves. "
-                    "At night, the Seer looks at one player's "
-                    "secret role card."
-                ),
-            )
-
-    return None
+async def _run_agent_async(game: str, prompt: str) -> AssistantResponse:
+    _ensure_google_credentials()
+    user_input = _build_user_input(game, prompt)
+    result = await _get_rules_agent().run(user_input)
+    return _extract_agent_output(result)
 
 
 def answer_question(
@@ -493,19 +291,17 @@ def answer_question(
 
     assert game is not None
 
-    deterministic = _deterministic_eval_response(game, prompt)
-    if deterministic is not None:
-        return deterministic
-
-    _ensure_google_credentials()
-    user_input = _build_user_input(game, prompt)
-
     try:
-        result = _get_rules_agent().run_sync(user_input)
-        return result.output
+        response = _run_agent_sync(game, prompt)
+        return _enrich_details(game, prompt, response)
     except Exception:
         return AssistantResponse(
             ruling="I couldn't complete the dynamic rules lookup right now.",
+            evidence=(
+                "Dynamic lookup failed before citation extraction. "
+                "Please try again."
+            ),
+            source=f"{game.title()} - Source unavailable",
             follow_up=(
                 "Please try again in a moment, or rephrase with "
                 "the exact card/role and phase."
@@ -523,19 +319,17 @@ async def answer_question_async(
 
     assert game is not None
 
-    deterministic = _deterministic_eval_response(game, prompt)
-    if deterministic is not None:
-        return deterministic
-
-    _ensure_google_credentials()
-    user_input = _build_user_input(game, prompt)
-
     try:
-        result = await _get_rules_agent().run(user_input)
-        return result.output
+        response = await _run_agent_async(game, prompt)
+        return _enrich_details(game, prompt, response)
     except Exception:
         return AssistantResponse(
             ruling="I couldn't complete the dynamic rules lookup right now.",
+            evidence=(
+                "Dynamic lookup failed before citation extraction. "
+                "Please try again."
+            ),
+            source=f"{game.title()} - Source unavailable",
             follow_up=(
                 "Please try again in a moment, or rephrase with "
                 "the exact card/role and phase."

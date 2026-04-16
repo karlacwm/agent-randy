@@ -500,20 +500,33 @@ async def home_page() -> str:
           ['follow_up', 'Follow-up - need more info'],
         ];
 
+        const fallbackByKey = {
+          source: 'No source available.',
+          evidence: 'No evidence quote available.',
+          follow_up: 'No follow-up needed.',
+        };
+
         const detailItems = detailConfig
-          .filter(([key]) => Boolean(data[key]))
-          .map(([key, label]) => (
-            `<div class="detail-item"><p class="card-title">${label}</p><p class="detail-content">${esc(data[key])}</p></div>`
-          ));
+          .map(([key, label]) => {
+            const value = data[key] || fallbackByKey[key];
+            return (
+              '<div class="detail-item">'
+              + `<p class="card-title">${label}</p>`
+              + `<p class="detail-content">${esc(value)}</p>`
+              + '</div>'
+            );
+          });
 
         const detailsContent = detailItems.join('');
-        const hasDetails = detailItems.length > 0;
-        const detailsToggle = hasDetails
-          ? '<button class="button secondary" id="toggle-details" type="button">Show details</button>'
-          : '';
-        const detailsBlock = hasDetails
-          ? `<div class="details" id="details-block" style="display:none;">${detailsContent}</div>`
-          : '';
+        const detailsToggle = (
+          '<button class="button secondary" '
+          + 'id="toggle-details" type="button">'
+          + 'Show details</button>'
+        );
+        const detailsBlock = (
+          '<div class="details" id="details-block" '
+          + `style="display:none;">${detailsContent}</div>`
+        );
 
         resultEl.innerHTML = `
           <div class="result-top">
@@ -524,15 +537,13 @@ async def home_page() -> str:
           ${detailsBlock}
         `;
 
-        if (hasDetails) {
-          const toggleBtn = document.getElementById('toggle-details');
-          const detailsEl = document.getElementById('details-block');
-          toggleBtn.addEventListener('click', () => {
-            const hidden = detailsEl.style.display === 'none';
-            detailsEl.style.display = hidden ? 'grid' : 'none';
-            toggleBtn.textContent = hidden ? 'Hide details' : 'Show details';
-          });
-        }
+        const toggleBtn = document.getElementById('toggle-details');
+        const detailsEl = document.getElementById('details-block');
+        toggleBtn.addEventListener('click', () => {
+          const hidden = detailsEl.style.display === 'none';
+          detailsEl.style.display = hidden ? 'grid' : 'none';
+          toggleBtn.textContent = hidden ? 'Hide details' : 'Show details';
+        });
       };
 
       askBtn.addEventListener('click', async () => {
@@ -546,7 +557,7 @@ async def home_page() -> str:
 
         askBtn.disabled = true;
         askBtn.textContent = 'Randy is thinking...';
-        renderError('Working on your ruling...');
+        renderError('Randy is checking the game rules...');
 
         try {
           const res = await fetch('/assistant/ask', {
