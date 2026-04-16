@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.services.agent import answer_question
+from app.services.agent import answer_question_async
 
 router = APIRouter(prefix="/assistant")
 
@@ -21,7 +21,8 @@ async def welcome_message(session_id: str):
         "session_id": session_id,
         "message": (
             "Welcome to Randy. Everyone needs a Randy to play boardgame with. "
-            "Tell me your game and the exact situation, and I will provide a cited ruling."
+            "Tell me your game and the exact situation, "
+            "and I will provide a cited ruling."
         ),
     }
 
@@ -34,11 +35,12 @@ async def ask_assistant(query: UserQuery):
 
     history = chat_sessions.get(query.session_id, [])
     history.append(prompt)
-    # Keep only the latest prompts per session to avoid unbounded memory growth.
+    # Keep only the latest prompts per session
+    # to avoid unbounded memory growth.
     chat_sessions[query.session_id] = history[-20:]
 
     try:
-        return answer_question(prompt, selected_game=query.game)
+        return await answer_question_async(prompt, selected_game=query.game)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

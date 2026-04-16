@@ -597,6 +597,11 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
         if draw_playable is not None:
             return draw_playable
 
+        # Check wild draw four before unknown entity check (can reference non-standard card names)
+        wild_draw_four = _handle_uno_wild_draw_four(prompt)
+        if wild_draw_four is not None:
+            return wild_draw_four
+
         unknown_named_card = _handle_uno_unknown_named_card(prompt)
         if unknown_named_card is not None:
             return unknown_named_card
@@ -624,10 +629,6 @@ def answer_question(prompt: str, selected_game: str | None = None) -> AssistantR
         plus4_challenge = _handle_uno_plus4_challenge(prompt)
         if plus4_challenge is not None:
             return plus4_challenge
-
-        wild_draw_four = _handle_uno_wild_draw_four(prompt)
-        if wild_draw_four is not None:
-            return wild_draw_four
 
         reverse = _handle_uno_reverse(prompt)
         if reverse is not None:

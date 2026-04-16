@@ -545,7 +545,7 @@ async def home_page() -> str:
         }
 
         askBtn.disabled = true;
-        askBtn.textContent = 'Thinking...';
+        askBtn.textContent = 'Randy is thinking...';
         renderError('Working on your ruling...');
 
         try {

@@ -15,10 +15,10 @@ The agent answers real game situations with:
 - Direct citations from local rulebook markdown files
 - Explicit undefined-card detection (example: UNO +3 -> not an official defined card)
 
-The current implementation is intentionally simple and deterministic:
-- No cloud model required for core answering flow
-- Local markdown retrieval only
-- Error-safe API responses
+The current implementation uses a dynamic LLM agent (Randy) with tool-calling:
+- Vertex AI Gemini model for conversational reasoning
+- Local markdown retrieval tools for grounded rule lookup
+- Structured and error-safe API responses
 
 ## Rulebook sources
 
