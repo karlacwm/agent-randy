@@ -22,74 +22,48 @@ The current implementation uses a dynamic LLM agent (Randy) with tool-calling:
 
 ## Rulebook sources
 
-- UNO: https://www.bsbwlibrary.org/wp-content/uploads/2023/08/Uno.pdf
-- Werewolves: https://www.zygomatic-games.com/wp-content/uploads/2020/04/werewolvesofmillershollow_en_rules_compressed.pdf
+- [UNO](https://www.bsbwlibrary.org/wp-content/uploads/2023/08/Uno.pdf)
+- [Werewolves](https://www.zygomatic-games.com/wp-content/uploads/2020/04/werewolvesofmillershollow_en_rules_compressed.pdf)
 
-## Quickstart
+## What it does
 
-1. Install dependencies:
+- Answers rule questions from chat prompts.
+- Uses local markdown rulebooks.
+- Returns `ruling`, `evidence`, `source`, `follow_up`.
+- Rejects unsupported games.
 
-```bash
-uv sync
-```
+## Tech
 
-2. Start the API:
+- FastAPI backend.
+- Vertex AI Gemini via tool-calling agent.
+- Simple web UI.
 
-```bash
-uv run python -m app.main
-```
+## Run
 
-3. Open docs:
+- Install: `uv sync`
+- Start: `uv run python -m app.main`
+- UI: `http://localhost:8000`
+- Docs: `http://localhost:8000/docs`
 
-`http://localhost:8000/docs`
-
-4. Open the chat UI:
-
-`http://localhost:8000`
-
-## Error handling
-
-- Empty prompt returns a 400 with clear message.
-- Unsupported game returns a safe response plus supported game list.
-- Unknown scenario returns a clarification request.
-
-## API Endpoints
+## API
 
 - `GET /`
 - `GET /health`
 - `GET /assistant/welcome/{session_id}`
 - `POST /assistant/ask`
 
-Example request body:
+## Evaluation
 
-```json
-{
-	"session_id": "demo-1",
-	"prompt": "In UNO, can I stack a +2 on another +2?"
-}
-```
+- Data: `data/evaluation_data/eval_data.json`
+- Run: `uv run python -m scripts.run_local_evaluation`
+- Uses semantic scoring for LLM-style answers.
 
-## Local Evaluation
+## Files
 
-Starter eval dataset:
-- `data/evaluation_data/eval_data.json`
-
-Current dataset size: 21 cases (normal, edge cases, unsupported game, hallucination traps).
-
-Run local evaluation:
-
-```bash
-uv run python -m scripts.run_local_evaluation
-```
-
-This script prints pass/fail and pass-rate using simple required-signal checks.
-
-## Project structure
-
-- `app/main.py`: FastAPI app and web UI.
-- `app/routers/assistant.py`: API endpoints and request validation.
-- `app/services/agent.py`: Deterministic answer assembly.
-- `app/services/rules_db.py`: Rule loading, chunking, retrieval, quoting.
-- `data/*.md`: Local rule references used for retrieval.
+- `app/main.py` — app + UI
+- `app/routers/assistant.py` — endpoints
+- `app/services/agent.py` — LLM agent flow
+- `app/services/rules_db.py` — rule retrieval
+- `data/*.md` — rule sources
 
 
