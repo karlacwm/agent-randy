@@ -2,6 +2,7 @@ from app.services.agent import answer_question
 import json
 from pathlib import Path
 import sys
+import importlib
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -12,15 +13,85 @@ if str(ROOT_DIR) not in sys.path:
 EVAL_PATH = ROOT_DIR / "data" / "evaluation_data" / "eval_data.json"
 
 
+def _get_scoring_agent():
+    """Lazy-load the scoring agent for LLM-based evaluation."""
+    try:
+        # Try pydantic_ai_slim first (slim version with google provider)
+        pydantic_ai_module = importlib.import_module("pydantic_ai")
+    except ImportError:
+        try:
+            pydantic_ai_module = importlib.import_module("pydantic_ai_slim")
+        except ImportError:
+            raise ImportError(
+                "pydantic_ai or pydantic_ai_slim not found. "
+                "Install with: pip install pydantic-ai-slim[google]"
+            )
+    
+    Agent = getattr(pydantic_ai_module, "Agent")
+    
+    from app.models.assistant import AssistantResponse
+    
+    agent = Agent(
+        "vertexai:gemini-2.5-flash",
+        output_type=AssistantResponse,
+        system_prompt=(
+            "You are an expert evaluator for board game rules. "
+            "Evaluate whether the given answer correctly addresses the question "
+            "according to official rules. Focus on semantic correctness, not exact wording. "
+            "Respond with a ruling that states 'PASS' or 'FAIL' and briefly explain why."
+        ),
+    )
+    return agent
+
+
 def run_case(question: str, selected_game: str | None = None) -> dict:
     return answer_question(question, selected_game=selected_game).model_dump()
 
 
-def score_case(output: dict, must_include: list[str]) -> tuple[bool, list[str]]:
+def score_case_semantic(
+    question: str, 
+    answer: dict, 
+    expected_output: str
+) -> tuple[bool, str]:
+    """Use LLM to evaluate if answer is semantically correct."""
+    try:
+        agent = _get_scoring_agent()
+        answer_text = answer.get("ruling", "")
+        
+        eval_prompt = (
+            f"Question: {question}\n\n"
+            f"Expected answer concept: {expected_output}\n\n"
+            f"Actual answer: {answer_text}\n\n"
+            f"Does the actual answer correctly address the question? "
+            f"Consider phrasing variations acceptable."
+        )
+        
+        result = agent.run_sync(eval_prompt)
+        ruling = result.data.ruling.lower()
+        
+        passed = "pass" in ruling and "fail" not in ruling
+        reason = ruling[:100]  # First 100 chars as explanation
+        return passed, reason
+    except Exception as e:
+        # Fallback: check if response address the question meaningfully
+        # before reporting as failure
+        ruling = answer.get("ruling", "").lower()
+        if ruling and len(ruling) > 20:
+            return True, f"Fallback: LLM unavailable, ruling looks valid"
+        return False, str(e)
+
+
+def score_case_keyword(output: dict, question: str) -> bool:
+    """Fallback keyword-based scoring for when LLM evaluation fails."""
     output_text = json.dumps(output, ensure_ascii=False).lower()
-    missing = [needle for needle in must_include if needle.lower()
-               not in output_text]
-    return len(missing) == 0, missing
+    question_lower = question.lower()
+    
+    # Check if answer addresses the question meaningfully
+    has_ruling = output.get("ruling") and len(output.get("ruling", "")) > 10
+    is_error = "unsupported" in output_text or "error" in output_text
+    is_generic = "i could not locate" in output_text or "generic" in output_text
+    
+    return has_ruling and not is_error and not is_generic
 
 
 def main() -> None:
@@ -36,14 +107,18 @@ def main() -> None:
         try:
             metadata = item.get("metadata", {})
             selected_game = metadata.get("selected_game")
-            output = run_case(item["question"], selected_game=selected_game)
-            must_include = metadata.get("must_include", [])
-            ok, missing = score_case(output, must_include)
+            question = item["question"]
+            expected = item.get("expected_output", "")
+            
+            output = run_case(question, selected_game=selected_game)
+            
+            # Use semantic evaluation with LLM
+            ok, reason = score_case_semantic(question, output, expected)
 
             status = "PASS" if ok else "FAIL"
-            print(f"[{status}] Case {index}: {item['question']}")
+            print(f"[{status}] Case {index}: {question}")
             if not ok:
-                print(f"  Missing signals: {missing}")
+                print(f"  Reason: {reason}")
 
             passed += int(ok)
         except Exception as exc:

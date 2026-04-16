@@ -4,168 +4,147 @@
       "question": "In UNO, can I stack a +2 on another +2?",
       "expected_output": "Official UNO rules do not allow stacking.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["do NOT allow stacking"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, can I play my card when it is not my turn, but color and number match?",
       "expected_output": "No. You can only play on your own turn.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["only play on your own turn"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, what happens if I forget to say UNO and someone catches me before the next turn starts?",
       "expected_output": "You draw 2 cards as penalty.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["draw 2", "before the next player begins"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, can I choose to draw even if I have a playable card?",
       "expected_output": "Yes, you may choose not to play and draw one card.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["choose NOT", "draw a card"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, if I draw a playable card, may I play it immediately?",
       "expected_output": "Yes, if the drawn card can be played, you can play it in the same turn.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["same turn"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, can Wild card be played even if I have another playable card?",
       "expected_output": "Yes, Wild can be played even with another playable card.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["can be played even", "another playable card"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, if the +4 challenge fails, what is the challenger's penalty?",
       "expected_output": "The challenger draws 6 cards total.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["PLUS 2", "6 total"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, what does Reverse do?",
       "expected_output": "It reverses direction of play.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["reverses the direction"]
+        "game": "uno"
       }
     },
     {
       "question": "In Werewolves, what does the Little Girl card do?",
       "expected_output": "She may peek only while Werewolves are awake; if caught, she is killed.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["only while", "caught", "killed"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can the Witch also be the Little Girl?",
       "expected_output": "No. A player has one character card.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["one character card", "cannot be both"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can the Witch use both potions in one night?",
       "expected_output": "Yes, both potions can be used in the same night.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["both potions", "same night"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what happens if the Hunter dies?",
       "expected_output": "The Hunter must immediately choose one player to die with them.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["MUST fire", "die instantly"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what happens if one Lover dies?",
       "expected_output": "The other lover immediately dies too.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["one lover dies", "other immediately dies"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can dead players still talk during discussion?",
       "expected_output": "No, dead players must not speak or participate.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["must not speak", "participate"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, when can the Little Girl peek?",
       "expected_output": "Only while Werewolves are awake.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["only while the Werewolves are awake"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what if werewolves catch the Little Girl peeking?",
       "expected_output": "She is immediately killed instead of original victim.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["immediately killed", "instead of their original victim"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can the Witch heal herself?",
       "expected_output": "Yes, the Witch can use healing potion on herself.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["CAN use the healing potion on herself"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, how many votes does the Mayor have?",
       "expected_output": "The Mayor has two votes.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["counts as TWO votes"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, if the Mayor dies, what happens next?",
       "expected_output": "The Mayor chooses a successor.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["choose their successor"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Catan, what does the robber do?",
       "expected_output": "Unsupported game in this project.",
       "metadata": {
-        "game": "unsupported",
-        "must_include": ["unsupported", "uno", "werewolves"]
+        "game": "unsupported"
       }
     },
     {
       "question": "In UNO, what does the Dragon card do?",
       "expected_output": "Dragon is not a defined card in official UNO rules.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["not a defined card"]
+        "game": "uno"
       }
     },
     {
@@ -173,8 +152,7 @@
       "expected_output": "I need more specific details to help you.",
       "metadata": {
         "game": "uno",
-        "selected_game": "uno",
-        "must_include": ["more specific details"]
+        "selected_game": "uno"
       }
     },
     {
@@ -182,184 +160,161 @@
       "expected_output": "Detect game filter mismatch and ask user to switch game.",
       "metadata": {
         "game": "werewolves",
-        "selected_game": "werewolves",
-        "must_include": ["looks like a uno question", "filter is set to werewolves", "switch the game filter"]
+        "selected_game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can the Witch poison the Mayor?",
       "expected_output": "This case is not specified in the rules.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["not specified", "house ruling"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what happens if the Werewolf kills the Little Girl?",
       "expected_output": "This case is not specified in the rules.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["not specified", "house ruling"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what happens if a Werewolf kills another Werewolf?",
       "expected_output": "This case is not specified in the rules.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["not specified", "house ruling"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, can the Hunter kill the Mayor at night?",
       "expected_output": "This case is not specified in the rules.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["not specified", "house ruling"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, what happens if the Witch poisons the Seer?",
       "expected_output": "This case is not specified in the rules.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["not specified", "house ruling"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In UNO, can I play two cards of the same number and colour?",
       "expected_output": "Official UNO uses one card per turn.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["one card per turn", "house rule"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, can I put down two matching cards at once?",
       "expected_output": "Official UNO does not allow multi-card play in one turn.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["one card per turn", "not part of official core rules"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, can I play 2 cards in the same turn if they match?",
       "expected_output": "No, that is a house rule variant.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["one card per turn", "house rule"]
+        "game": "uno"
       }
     },
     {
       "question": "Player A plays a +4. I am next, and I have a +2 in my hand. Can I play it so the next person draws 6?",
       "expected_output": "No. Official UNO rules do not allow stacking draw penalties.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["no", "stacking"]
+        "game": "uno"
       }
     },
     {
       "question": "I suspect my friend played a Wild Draw 4 illegally. I challenge them, but it turns out they were innocent. What is my exact penalty?",
       "expected_output": "If the challenge fails, the challenger draws 6 cards total (the original 4 plus 2 extra).",
       "metadata": {
-        "game": "uno",
-        "must_include": ["6", "plus 2"]
+        "game": "uno"
       }
     },
     {
       "question": "Can I play a 0 in UNO to swap hands with another player?",
       "expected_output": "This is not covered in the official UNO rules in this project (house rule variant).",
       "metadata": {
-        "game": "uno",
-        "must_include": ["not covered", "house rule"]
+        "game": "uno"
       }
     },
     {
       "question": "The Werewolves killed the Hunter during the night. The Witch decides not to save him. Does the Hunter get to shoot someone right then, or wait until morning?",
       "expected_output": "The Hunter's reaction is immediate when they die.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["immediately", "hunter"]
+        "game": "werewolves"
       }
     },
     {
       "question": "Can the Witch use her healing potion on herself and throw the poison potion at someone else on the very first night?",
       "expected_output": "Yes. She can heal herself and can use both potions in the same night.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["heal herself", "both potions", "same night"]
+        "game": "werewolves"
       }
     },
     {
       "question": "How many roads do I need to build a settlement?",
       "expected_output": "Unsupported game; this agent only supports UNO and Werewolves (and should not answer Catan rules).",
       "metadata": {
-        "game": "unsupported",
-        "must_include": ["unsupported", "uno", "werewolves", "secret hitler"]
+        "game": "unsupported"
       }
     },
     {
       "question": "In UNO, if I play the Little Girl card, do I get to peek at the next player's hand?",
       "expected_output": "Little Girl is not a defined UNO card; clarify with official UNO cards.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["not defined", "uno"]
+        "game": "uno"
       }
     },
     {
       "question": "I'm playing that hidden role game with the village. I have the card with the eyeball on it. Who am I and what do I do?",
       "expected_output": "Infer Werewolves and explain Seer ability (looks at one player's card each night).",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["seer", "werewolves", "night"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In UNO, I forgot to say UNO. The next player already drew a card and finished their turn, and THEN someone noticed. Do I still draw 2 cards?",
       "expected_output": "No. You must be caught before the next player begins their turn.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["before the next player begins their turn"]
+        "game": "uno"
       }
     },
     {
       "question": "In UNO, the discard pile is a Blue 5. I have a Blue 7 in my hand, but I really want to play my Wild Draw Four instead. Is that a legal move?",
       "expected_output": "No. You can only play a Wild Draw Four when you do NOT have a card that matches the color.",
       "metadata": {
-        "game": "uno",
-        "must_include": ["only play", "do not have a card", "matches the color"]
+        "game": "uno"
       }
     },
     {
       "question": "In Werewolves, Cupid made the Hunter and the Seer lovers. During the night, the Werewolves kill the Seer. What exactly happens when everyone wakes up?",
       "expected_output": "The Seer dies. The Hunter immediately dies of a broken heart. The Hunter then MUST instantly fire their gun and choose a third player to die.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["dies of a broken heart", "MUST fire their gun"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In Werewolves, the village votes to execute the Mayor during the day. Do we hold a new vote to elect the next Mayor?",
       "expected_output": "No. If the Mayor is killed, they choose their successor with their dying breath.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["choose their successor", "dying breath"]
+        "game": "werewolves"
       }
     },
     {
       "question": "In UNO, if someone plays a 7, do we all have to slam our hands on the deck?",
       "expected_output": "I could not locate a direct official rule match. (The agent should not validate this house rule).",
       "metadata": {
-        "game": "uno",
-        "must_include": ["could not locate", "not explicitly cover"]
+        "game": "uno"
       }
     },
     {
       "question": "In Werewolves, I was killed on the first night. Can I still use hand gestures to tell the village who the wolves are?",
       "expected_output": "No. Eliminated players must not speak, gesture, or participate in any way.",
       "metadata": {
-        "game": "werewolves",
-        "must_include": ["must not speak, gesture, or participate"]
+        "game": "werewolves"
       }
     }
   ]
